@@ -84,7 +84,7 @@ void setup() {
   imu.init();
 
   Serial.begin(9600); // Logging Port
-  Serial2.begin(9600); // Debug Port
+  Serial3.begin(9600); // Debug Port
 
   delay(1000);
 
@@ -94,8 +94,8 @@ void setup() {
 
   delay(1000);
   Serial.println(header);
-  Serial2.print("Recording at ");
-  Serial2.println(frequency);
+  Serial3.print("t, frequency, ");
+  Serial3.println(frequency);
 
 }
 
@@ -120,9 +120,9 @@ void loop() {
     mz = hmc.getMag('z');
     
     // Error Management:
-    if(mx == -4096){ mx = 0; Serial2.print(millis() - startTime); Serial2.println("mx, error, over/underflow");}
-    if(my == -4096){ my = 0; Serial2.print(millis() - startTime); Serial2.println("my, error, over/underflow");}
-    if(mz == -4096){ mz = 0; Serial2.print(millis() - startTime); Serial2.println("mz, error, over/underflow");}
+    if(mx == -4096){ mx = 0; Serial3.print(millis() - startTime); Serial3.println("mx, error, over/underflow");}
+    if(my == -4096){ my = 0; Serial3.print(millis() - startTime); Serial3.println("my, error, over/underflow");}
+    if(mz == -4096){ mz = 0; Serial3.print(millis() - startTime); Serial3.println("mz, error, over/underflow");}
     
     Serial.print(millis()-startTime);
     Serial.print(",");
@@ -156,7 +156,7 @@ void loop() {
     
     if(waitTime < 0){
       waitTime = 0; //If we took longer than rate
-      Serial2.println("t, warn, can't keep up");
+      Serial3.println("t, warn, can't keep up");
     }
     
     delay(waitTime);
