@@ -11,7 +11,7 @@ Each of the sensors (ADXL accelerometer, HMC magnetometer and ITG gyroscope) are
 initialising the stick and powering it. To minimise the size of the board, digital pins of the Arduino are used to provide VCC and GND to the stick, as opposed
 to soldering to the VCC and GND pins.
 
-The firmware uses four buttons to provide start/stop, increase sample rate, decrease sample rate, and new file (OpenLog comapatible) functionality. Again to save
+The firmware uses four buttons to provide start/stop, increase sample rate, decrease sample rate, and new file (OpenLog compatible) functionality. Again to save
 space each momentary switch uses a digital pin for ground, a digital pin as a VCC pullup (through a 10k resistor), and a pin as a digital input. Pin 13's LED is
 used to provide simple feedback.
 
@@ -23,17 +23,34 @@ file feature is designed specifically for an OpenLog. The Third Serial port (TXO
 Format for the CSV output:
 --------------------------
 
-t, ax, ay, az, gx, gy, gz, mx, my, mz
+    t, ax, ay, az, gx, gy, gz, mx, my, mz
 Where
-t = time, in milliseconds since logging of this file began. If logging is paused, t still progresses.
-ax, ay, az = accelerometer data, raw with no units or noise reduction
-gx, gy, gz = gyroscope data, raw + noise
-mx, my, mz = magnetometer data, raw + noise
+    t = time, in milliseconds since logging of this file began. If logging is paused, t still progresses.
+    ax, ay, az = accelerometer data, raw with no units or noise reduction
+    gx, gy, gz = gyroscope data, raw + noise
+    mx, my, mz = magnetometer data, raw + noise
 
 Note that the magnetometer can throw errors, returning a value of -4096 (see datasheet). The firmware replaces these with a zero value, and 
 prints to Serial3 "mx, error, over/underflow". This error can be caused by being too close to a strong magnetic field, e.g. Hard Drive, speaker or PSU.
 
 The Serial3 output is in a format similar to CSV, where the metric, issue, and cause are printed separated by commas then followed by CR+LF
+
+
+OpenLog Config
+--------------
+
+For the 9DoR IMU to correctly load it's config from the OpenLog, a couple of things need doing:
+
+In CONFIG.TXT (which is the OpenLog's config file) you need to change echo from 1 (on) to 0 (off) so that when the 9DoR requests data, it doesn't get the command it just issued echoed back to it.
+Secondly, a file named IMU.CFG needs to be on the card. If the 9DoR can't get it off the OpenLog, it will create it. It tells the 9DoR which axes on each of the three sensors should be logged,
+using a simple CSV format:
+
+    1,1,1,1,1,1,1,1,1,0040,2000,0040
+
+Each of the first 9 values are booleans that successively control ax, ay, az, gx, gy, gz, mx, my, mz. As normal, 1 means "Log this axis" and 0 means "Don't log this axis". The last three values 
+set the initial rate (time period between measurements to default to), the maximum rate and the minimum rate, all in milliseconds. Note that all three values must be four digits long and +ve, so
+have a maximum range of 0 to 9999 milliseconds, or effectively (based on experimentation) 25 Hz to 0.1 Hz for measuring.
+
 
 
 

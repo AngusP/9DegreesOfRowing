@@ -36,3 +36,10 @@ void imu::power( boolean power ){
   digitalWrite(_VCC, power);
   
 }
+
+
+void imu::readConfig(){
+  
+  // May move readConfig() here from main .ino
+  
+}

@@ -14,6 +14,7 @@ class imu{
     imu(int VCC, int GND);
     void init();
     void power( boolean power );
+    void readConfig();
     
     
   private:
