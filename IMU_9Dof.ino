@@ -67,6 +67,8 @@ boolean loggz = true;
 boolean logmx = true;
 boolean logmy = true;
 boolean logmz = true;
+unsigned long logfor = 0; // 0 to 9999000 milliseconds
+unsigned long logperiod = 0; // 0 to 9999000 milliseconds
 
 
 
@@ -225,6 +227,10 @@ void loop() {
     
     delay(waitTime);
     
+    if( millis() >= logperiod && logfor != 0 ){ // If we've passed the time when we should stop
+      toggleState = 0;
+    }
+    
   }
   
   
@@ -233,7 +239,11 @@ void loop() {
     
     toggleState = !toggleState;
     if(toggleState == 0) digitalWrite( 13, LOW);
-    if( startTime == 0) startTime = millis();
+    if(startTime == 0) startTime = millis();
+    if(toggleState == 1){
+      logperiod = millis() + logfor; // logperiod is the time in millis when we stop
+    }
+    
     lastBounce = millis();
     
     if( !logax && !logay && !logaz && !loggx && !loggy && !loggz && !logmx && !logmy && !logmz ){
@@ -286,37 +296,7 @@ void loop() {
   
   if( digitalRead( NEWF ) == HIGH && millis() - lastBounce > bounceThreshold){
     
-    digitalWrite(13, HIGH);
-    Serial.flush();
-    delay(250);
-    
-    Serial.write(26); Serial.write(26); Serial.write(26); //Send openlog command dropin (CTRL+Z)
-    delay(10);
-    Serial.print("sync\r"); // Ask OpenLog to write any remaining charachters in the buffer to the SD card
-    delay(500);
-    Serial.print("reset\r");
-    delay(1000); // Give the OpenLog some time
-    
-    
-    Serial.print("\"t\"");
-    if( logax ) Serial.print(",\"ax\"");
-    if( logay ) Serial.print(",\"ay\"");
-    if( logaz ) Serial.print(",\"az\"");
-    if( loggx ) Serial.print(",\"gx\"");
-    if( loggy ) Serial.print(",\"gy\"");
-    if( loggz ) Serial.print(",\"gz\"");
-    if( logmx ) Serial.print(",\"mx\"");
-    if( logmy ) Serial.print(",\"my\"");
-    if( logmz ) Serial.print(",\"mz\"");
-    Serial.println("");
-    
-    digitalWrite(13, LOW);
-    lastBounce = millis();
-    
-    toggleState = 0; // reset variables
-    rate = minRate;
-    startTime = 0;
-    notify = 1;
+    newFile();
     
   }
   
@@ -519,13 +499,122 @@ void readConfig() {
     }
   }
   
-  // For now, changing the rate via IMU.CFG is unsupported
+  
+  
+  // ri, rma and rmi config will be added eventually
+  
+  // Clear Serial buffer:
+  while( Serial.available() ){
+    byte temp = Serial.read();
+  }
+  
+  // Read logfor config:
+  int thousands = 0;
+  int hundreds = 0;
+  int tens = 0;
+  int units = 0;
+  Serial.print("read IMU.CFG 33 1"); // Thousands
+  Serial.write(13);
+  Serial.flush();
+  delay(5);
+  while( Serial.available() ){
+    buffer = Serial.read();
+    if( buffer < 48 || buffer > 57){
+      Serial3.println("c, error, logfor wasn't supplied with a number at the thousands column");
+    }
+    thousands = buffer - 48; // ASCII '0' has decimal code 48, so numbers are ASCII val - 48
+  }
+  Serial.print("read IMU.CFG 34 1"); // Hundreds
+  Serial.write(13);
+  Serial.flush();
+  delay(5);
+  while( Serial.available() ){
+    buffer = Serial.read();
+    if( buffer < 48 || buffer > 57){
+      Serial3.println("c, error, logfor wasn't supplied with a number at the hundreds column");
+    }
+    hundreds = buffer - 48;
+  }
+  Serial.print("read IMU.CFG 35 1"); // Tens
+  Serial.write(13);
+  Serial.flush();
+  delay(5);
+  while( Serial.available() ){
+    buffer = Serial.read();
+    if( buffer < 48 || buffer > 57){
+      Serial3.println("c, error, logfor wasn't supplied with a number at the tens column");
+    }
+    tens = buffer - 48;
+  }
+  Serial.print("read IMU.CFG 36 1"); // Units
+  Serial.write(13);
+  Serial.flush();
+  delay(5);
+  while( Serial.available() ){
+    buffer = Serial.read();
+    if( buffer < 48 || buffer > 57){
+      Serial3.println("c, error, logfor wasn't supplied with a number at the units column");
+    }
+    units = buffer - 48;
+  }
+  
+  logfor = (thousands * 1000) + (hundreds * 100) + (tens * 10) + units;
+  logfor = logfor * 1000; // convert from seconds to millis
+  
+  // Temporary whilst bug fixing:
+  logfor = 20000; // 20 seconds
+  
+  logperiod = logfor;
+  
+  Serial3.print("c, notice, will log in bursts of "); Serial3.print(logfor); Serial3.println(" seconds.");
   
   Serial3.println("c, notice, Configuration read from OpenLog");
   
   Serial.print("reset");
   Serial.write(13);
   delay(10);
+}
+
+
+
+
+
+
+
+void newFile() {
+    
+  digitalWrite(13, HIGH);
+  Serial.flush();
+  delay(250);
+  
+  Serial.write(26); Serial.write(26); Serial.write(26); //Send openlog command dropin (CTRL+Z)
+  delay(10);
+  Serial.print("sync\r"); // Ask OpenLog to write any remaining charachters in the buffer to the SD card
+  delay(500);
+  Serial.print("reset\r");
+  delay(1000); // Give the OpenLog some time
+  
+  
+  Serial.print("\"t\"");
+  if( logax ) Serial.print(",\"ax\"");
+  if( logay ) Serial.print(",\"ay\"");
+  if( logaz ) Serial.print(",\"az\"");
+  if( loggx ) Serial.print(",\"gx\"");
+  if( loggy ) Serial.print(",\"gy\"");
+  if( loggz ) Serial.print(",\"gz\"");
+  if( logmx ) Serial.print(",\"mx\"");
+  if( logmy ) Serial.print(",\"my\"");
+  if( logmz ) Serial.print(",\"mz\"");
+  Serial.println("");
+  
+  digitalWrite(13, LOW);
+  lastBounce = millis();
+  
+  toggleState = 0; // reset variables
+  rate = minRate;
+  startTime = 0;
+  notify = 1;
+  
 }
 
 
